@@ -158,8 +158,8 @@ async function seedDatabase(sql: ReturnType<typeof postgres>) {
 
     for (const task of board.tasks) {
       await sql`
-        insert into tasks (id, board_id, title, type, status, created_at)
-        values (${task.id}, ${board.id}, ${task.title}, ${task.type}, ${task.status}, ${task.createdAt})
+        insert into tasks (id, board_id, title, type, priority, status, created_at)
+        values (${task.id}, ${board.id}, ${task.title}, ${task.type}, ${task.priority}, ${task.status}, ${task.createdAt})
       `;
     }
   }
