@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 .glass {
   background: rgba(24, 24, 27, 0.7);
   backdrop-filter: blur(10px);
