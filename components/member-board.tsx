@@ -8,7 +8,7 @@ import { addMustWinAction, createTaskAction, deleteMustWinAction, deleteTaskActi
 import { LogoutButton } from "@/components/logout-button";
 import { getMemberRollup, getTypeCounts } from "@/lib/metrics";
 import { taskTypeLabel } from "@/lib/seed-data";
-import type { Prompt, SystemRole, TaskType } from "@/lib/types";
+import type { Prompt, SystemRole, TaskPriority, TaskType } from "@/lib/types";
 
 const orderedTaskTypes: TaskType[] = ["calls", "follow-up", "build", "admin", "sales", "other"];
 
@@ -30,6 +30,7 @@ type BoardData = {
     id: string;
     title: string;
     type: TaskType;
+    priority: TaskPriority;
     status: "todo" | "done";
     createdAt: string;
   }[];
@@ -50,6 +51,7 @@ export function MemberBoard({
   const [isPending, startTransition] = useTransition();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskType, setNewTaskType] = useState<TaskType>("follow-up");
+  const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>("Level 2: Strategic");
   const [newMustWin, setNewMustWin] = useState("");
   const [blockerDraft, setBlockerDraft] = useState(board.blockerNote);
   const [coachingDraft, setCoachingDraft] = useState(board.coachingNote);
@@ -188,7 +190,7 @@ export function MemberBoard({
                 onChange={(event) => setNewTaskTitle(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
-                    refreshAfter(async () => createTaskAction({ userId: board.userId, title: newTaskTitle, type: newTaskType, teamId: board.teamId }));
+                    refreshAfter(async () => createTaskAction({ userId: board.userId, title: newTaskTitle, type: newTaskType, priority: newTaskPriority, teamId: board.teamId }));
                     setNewTaskTitle("");
                   }
                 }}
@@ -215,14 +217,31 @@ export function MemberBoard({
               </select>
             </div>
 
+            <div className="field-stack" style={{ minWidth: "180px" }}>
+              <label className="field-label" htmlFor="new-task-priority">
+                Priority
+              </label>
+              <select
+                className="select-input"
+                id="new-task-priority"
+                onChange={(event) => setNewTaskPriority(event.target.value as TaskPriority)}
+                value={newTaskPriority}
+              >
+                <option value="Level 1: Critical">Level 1: Critical</option>
+                <option value="Level 2: Strategic">Level 2: Strategic</option>
+                <option value="Level 3: Operational">Level 3: Operational</option>
+              </select>
+            </div>
+
             <button
               className="primary-button"
               disabled={!newTaskTitle.trim() || isPending}
               onClick={() =>
                 refreshAfter(async () => {
-                  await createTaskAction({ userId: board.userId, title: newTaskTitle, type: newTaskType, teamId: board.teamId });
+                  await createTaskAction({ userId: board.userId, title: newTaskTitle, type: newTaskType, priority: newTaskPriority, teamId: board.teamId });
                   setNewTaskTitle("");
                   setNewTaskType("follow-up");
+                  setNewTaskPriority("Level 2: Strategic");
                 })
               }
               type="button"
@@ -238,8 +257,8 @@ export function MemberBoard({
                 key={task.id}
                 task={task}
                 onDelete={() => refreshAfter(async () => deleteTaskAction({ userId: board.userId, taskId: task.id, teamId: board.teamId }))}
-                onSave={(title, type) =>
-                  refreshAfter(async () => updateTaskAction({ userId: board.userId, taskId: task.id, title, type, teamId: board.teamId }))
+                onSave={(title, type, priority) =>
+                  refreshAfter(async () => updateTaskAction({ userId: board.userId, taskId: task.id, title, type, priority, teamId: board.teamId }))
                 }
                 onToggle={() =>
                   refreshAfter(async () =>
@@ -364,12 +383,13 @@ function EditableTaskRow({
 }: {
   disabled: boolean;
   onDelete: () => void;
-  onSave: (title: string, type: TaskType) => void;
+  onSave: (title: string, type: TaskType, priority: TaskPriority) => void;
   onToggle: () => void;
   task: BoardData["tasks"][number];
 }) {
   const [title, setTitle] = useState(task.title);
   const [type, setType] = useState(task.type);
+  const [priority, setPriority] = useState(task.priority);
   const done = task.status === "done";
 
   return (
@@ -399,13 +419,18 @@ function EditableTaskRow({
                 </option>
               ))}
             </select>
+            <select className="select-input select-input-inline" onChange={(event) => setPriority(event.target.value as TaskPriority)} value={priority}>
+              <option value="Level 1: Critical">L1</option>
+              <option value="Level 2: Strategic">L2</option>
+              <option value="Level 3: Operational">L3</option>
+            </select>
             <span className="muted-text">{done ? "Completed" : "Open"}</span>
           </div>
         </div>
       </div>
 
       <div className="toolbar toolbar-inline toolbar-compact">
-        <button className="secondary-button" disabled={disabled || !title.trim()} onClick={() => onSave(title, type)} type="button">
+        <button className="secondary-button" disabled={disabled || !title.trim()} onClick={() => onSave(title, type, priority)} type="button">
           Save task
         </button>
         <button className="danger-button" disabled={disabled} onClick={onDelete} type="button">
