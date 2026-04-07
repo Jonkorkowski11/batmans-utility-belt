@@ -2,15 +2,20 @@ export type TaskStatus = "todo" | "done";
 
 export type TaskType = "calls" | "follow-up" | "build" | "admin" | "sales" | "other";
 
+export type TaskPriority = "Level 1: Critical" | "Level 2: Strategic" | "Level 3: Operational";
+
 export type SystemRole = "manager" | "member";
 
 export type Task = {
   id: string;
   title: string;
   type: TaskType;
+  priority: TaskPriority;
   status: TaskStatus;
+  isPastDue?: boolean;
   createdAt: string;
 };
+
 
 export type MustWin = {
   id: string;

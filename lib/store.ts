@@ -7,6 +7,7 @@ import { initialStoreData } from "@/lib/seed-data";
 import type {
   AppStore,
   DailyBoardRecord,
+  TaskPriority,
   TaskStatus,
   TaskType,
   TeamData,
@@ -105,6 +106,7 @@ async function ensureDatabaseInitialized() {
           board_id text not null references boards(id) on delete cascade,
           title text not null,
           type text not null,
+          priority text not null default 'Level 2: Strategic',
           status text not null,
           created_at timestamptz not null
         )
@@ -259,10 +261,11 @@ async function readDatabaseStore() {
     board_id: string;
     title: string;
     type: TaskType;
+    priority: TaskPriority;
     status: TaskStatus;
     created_at: string;
   }[]>`
-    select id, board_id, title, type, status, created_at::text
+    select id, board_id, title, type, priority, status, created_at::text
     from tasks
     order by created_at asc, id asc
   `;
@@ -281,6 +284,7 @@ async function readDatabaseStore() {
       id: task.id,
       title: task.title,
       type: task.type,
+      priority: task.priority,
       status: task.status,
       createdAt: task.created_at,
     });
@@ -444,7 +448,7 @@ async function getBoardIdForUser(userId: string) {
   return board?.id ?? null;
 }
 
-export async function addTask(userId: string, title: string, type: TaskType) {
+export async function addTask(userId: string, title: string, type: TaskType, priority: TaskPriority = "Level 2: Strategic") {
   const trimmedTitle = sanitizeTitle(title);
 
   if (!trimmedTitle) {
@@ -460,8 +464,8 @@ export async function addTask(userId: string, title: string, type: TaskType) {
     }
 
     await getSql()`
-      insert into tasks (id, board_id, title, type, status, created_at)
-      values (${randomUUID()}, ${boardId}, ${trimmedTitle}, ${type}, ${"todo"}, ${new Date().toISOString()})
+      insert into tasks (id, board_id, title, type, priority, status, created_at)
+      values (${randomUUID()}, ${boardId}, ${trimmedTitle}, ${type}, ${priority}, ${"todo"}, ${new Date().toISOString()})
     `;
     return;
   }
@@ -476,6 +480,7 @@ export async function addTask(userId: string, title: string, type: TaskType) {
           id: randomUUID(),
           title: trimmedTitle,
           type,
+          priority,
           status: "todo",
           createdAt: new Date().toISOString(),
         },
@@ -484,7 +489,7 @@ export async function addTask(userId: string, title: string, type: TaskType) {
   }));
 }
 
-export async function updateTask(userId: string, taskId: string, title: string, type: TaskType) {
+export async function updateTask(userId: string, taskId: string, title: string, type: TaskType, priority: TaskPriority = "Level 2: Strategic") {
   const trimmedTitle = sanitizeTitle(title);
 
   if (!trimmedTitle) {
@@ -501,7 +506,7 @@ export async function updateTask(userId: string, taskId: string, title: string, 
 
     await getSql()`
       update tasks
-      set title = ${trimmedTitle}, type = ${type}
+      set title = ${trimmedTitle}, type = ${type}, priority = ${priority}
       where id = ${taskId} and board_id = ${boardId}
     `;
     return;
@@ -517,6 +522,7 @@ export async function updateTask(userId: string, taskId: string, title: string, 
               ...task,
               title: trimmedTitle,
               type,
+              priority,
             }
           : task
       ),

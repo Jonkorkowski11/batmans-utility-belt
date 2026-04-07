@@ -1,3 +1,33 @@
+.glass {
+  background: rgba(24, 24, 27, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+}
+
+.l1-border {
+  border-left: 4px solid #dc2626;
+} /* Red */
+.l2-border {
+  border-left: 4px solid #f59e0b;
+} /* Amber */
+.l3-border {
+  border-left: 4px solid #0ea5e9;
+} /* Blue */
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 :root {
   --bg: #071019;
   --bg-elevated: rgba(9, 19, 31, 0.88);

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { addMustWin, addPrompt, addTask, deleteMustWin, deletePrompt, deleteTask, deleteTeamMember, resetStore, setTaskStatus, updateBoardNotes, updateMustWin, updatePrompt, updateTask, updateTeamMember, addTeamMember } from "@/lib/store";
 import { authenticateUser, clearSession, setSession } from "@/lib/auth";
-import type { TaskType } from "@/lib/types";
+import type { TaskPriority, TaskType } from "@/lib/types";
 
 function revalidateCorePaths(userId?: string, teamId = "execution-team") {
   revalidatePath("/");
@@ -45,8 +45,8 @@ export async function resetDemoDataAction() {
   revalidateCorePaths();
 }
 
-export async function createTaskAction(input: { userId: string; title: string; type: TaskType; teamId: string }) {
-  await addTask(input.userId, input.title, input.type);
+export async function createTaskAction(input: { userId: string; title: string; type: TaskType; priority: TaskPriority; teamId: string }) {
+  await addTask(input.userId, input.title, input.type, input.priority);
   revalidateCorePaths(input.userId, input.teamId);
 }
 
@@ -55,9 +55,10 @@ export async function updateTaskAction(input: {
   taskId: string;
   title: string;
   type: TaskType;
+  priority: TaskPriority;
   teamId: string;
 }) {
-  await updateTask(input.userId, input.taskId, input.title, input.type);
+  await updateTask(input.userId, input.taskId, input.title, input.type, input.priority);
   revalidateCorePaths(input.userId, input.teamId);
 }
 

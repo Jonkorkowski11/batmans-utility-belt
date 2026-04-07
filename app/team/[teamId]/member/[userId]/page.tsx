@@ -1,4 +1,4 @@
-import { MemberBoard } from "@/components/member-board";
+import { ExecutionBoard } from "@/components/execution-board";
 import { requireSession } from "@/lib/auth";
 import { getBoardView, readStore } from "@/lib/store";
 import { redirect } from "next/navigation";
@@ -25,11 +25,8 @@ export default async function MemberPage({ params }: MemberPageProps) {
   }
 
   return (
-    <MemberBoard
-      board={board}
-      prompts={store.prompts}
-      teamName={store.team.name}
-      viewerRole={session.systemRole}
+    <ExecutionBoard
+      data={board}
     />
   );
 }
