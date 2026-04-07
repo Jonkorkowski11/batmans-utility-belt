@@ -33,7 +33,7 @@ function getSql() {
   if (!sqlClient) {
     sqlClient = postgres(DATABASE_URL, {
       max: 1,
-      ssl: DATABASE_URL.includes(".railway.internal") ? false : "require",
+      ssl: DATABASE_URL.includes(".railway.internal") || DATABASE_URL.includes(".proxy.rlwy.net") ? false : "require",
       prepare: false,
     });
   }
