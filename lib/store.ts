@@ -203,17 +203,26 @@ export async function readStore() {
     return readDatabaseStore();
   }
 
+  // Only run file-based logic if database is NOT enabled
   return readFileStore();
 }
 
 async function readDatabaseStore() {
   const sql = getSql();
-  const [team] = await sql<{ id: string; name: string; manager_mode_label: string }[]>`
+  const teamResult = await sql<{ id: string; name: string; manager_mode_label: string }[]>`
     select id, name, manager_mode_label
     from teams
     order by id
     limit 1
   `;
+
+  if (teamResult.length === 0) {
+    // If database is enabled but empty, initialize it
+    await ensureDatabaseInitialized();
+    return readDatabaseStore();
+  }
+
+  const team = teamResult[0];
 
   const users = await sql<{
     id: string;
