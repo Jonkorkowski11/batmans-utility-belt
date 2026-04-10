@@ -1,7 +1,8 @@
 "use client";
 
+import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { 
   Lock, 
   Satellite, 
@@ -9,27 +10,32 @@ import {
   Crosshair,
   CheckCircle
 } from "lucide-react";
-import { 
-  logoutAction, 
-  toggleTaskAction 
-} from "@/app/actions";
-import type { Task } from "@/lib/types";
+
+type TaskItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  type: string;
+  status: string;
+  persona: string;
+  dueDate: string | null;
+  gCalEventId: string | null;
+  assignee: { id: string; name: string | null; email: string | null };
+  creator: { id: string; name: string | null };
+  _count: { messages: number };
+};
 
 interface ExecutionBoardProps {
   data: {
-    boardId: string;
-    teamId: string;
     userId: string;
     name: string;
     role: string;
-    dailyQuota: number;
-    tasks: Task[];
+    tasks: TaskItem[];
   };
 }
 
 export function ExecutionBoard({ data }: ExecutionBoardProps) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [toasts, setToasts] = useState<{ id: string; message: string }[]>([]);
 
   const showToast = (message: string) => {
@@ -40,36 +46,33 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
     }, 4500);
   };
 
-  const handleLogout = async () => {
-    await logoutAction();
-    router.push("/login");
-  };
-
-  const handleToggleTask = (taskId: string, currentStatus: "todo" | "done") => {
-    const nextStatus = currentStatus === "todo" ? "done" : "todo";
-    startTransition(async () => {
-      await toggleTaskAction({
-        userId: data.userId,
-        teamId: data.teamId,
-        taskId,
-        nextStatus,
-      });
-      if (nextStatus === "done") {
-        showToast(`WEBHOOK FIRED: Jon & Bishop notified via Google Chat: ${data.name} completed task.`);
-      }
+  const handleToggleTask = async (taskId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === "DONE" ? "OPEN" : "DONE";
+    await fetch("/api/tasks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId, status: nextStatus }),
     });
+    if (nextStatus === "DONE") {
+      showToast(`Task completed by ${data.name}. Great work!`);
+    }
+    router.refresh();
   };
 
-  // Lockdown Rule: Level 1 task + Past Due + Not Completed
+  // Lockdown Rule: ROCK type + Past Due + Not Done
+  const now = new Date();
   const criticalOverdue = data.tasks.filter(
-    (t) => t.priority === "Level 1: Critical" && t.isPastDue && t.status === "todo"
+    (t) => t.type === "ROCK" && t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE"
   );
   const isLocked = criticalOverdue.length > 0;
 
-  // Sorting: Past due first, then by priority (Level 1, 2, 3)
+  // Sorting: Past due first, then by type (ROCK, ISSUE, TODO)
+  const typeOrder: Record<string, number> = { ROCK: 0, ISSUE: 1, TODO: 2 };
   const sortedTasks = [...data.tasks].sort((a, b) => {
-    if (a.isPastDue !== b.isPastDue) return a.isPastDue ? -1 : 1;
-    return a.priority.localeCompare(b.priority);
+    const aPastDue = a.dueDate && new Date(a.dueDate) < now;
+    const bPastDue = b.dueDate && new Date(b.dueDate) < now;
+    if (aPastDue !== bPastDue) return aPastDue ? -1 : 1;
+    return (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3);
   });
 
   return (
@@ -87,7 +90,7 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
             <Satellite className="w-3 h-3" /> Workspace Sync Active
           </div>
           <button 
-            onClick={handleLogout}
+            onClick={() => signOut({ callbackUrl: "/login" })}
             className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-bold uppercase tracking-wider"
           >
             <LogOut className="w-4 h-4" /> Exit
@@ -114,23 +117,24 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
                 <Lock className="w-5 h-5" /> System Locked: Bottleneck Detected
               </h2>
               <p className="text-red-200 text-sm font-semibold max-w-3xl">
-                You failed to execute a Level 1 priority directive yesterday. Elite operators do not leave critical tasks behind. All daily operations are halted. Neutralize the bottleneck below to restore your operational capacity.
+                You have an overdue Rock directive. Elite operators do not leave critical tasks behind. All daily operations are halted. Neutralize the bottleneck below to restore your operational capacity.
               </p>
             </div>
           )}
 
           <div className="space-y-4">
             {sortedTasks.map((task) => {
-              const isThisTheBlocker = task.priority === "Level 1: Critical" && task.isPastDue && task.status === "todo";
-              const isDisabled = (isLocked && !isThisTheBlocker) || task.status === "done";
+              const isPastDue = task.dueDate && new Date(task.dueDate) < now && task.status !== "DONE";
+              const isThisTheBlocker = task.type === "ROCK" && isPastDue;
+              const isDisabled = (isLocked && !isThisTheBlocker) || task.status === "DONE";
               
               let borderClass = "border-l-4 ";
               let badgeClass = "text-[10px] font-black uppercase tracking-widest ";
               
-              if (task.priority.includes("1")) {
+              if (task.type === "ROCK") {
                 borderClass += "border-l-[#dc2626]";
                 badgeClass += "text-red-500";
-              } else if (task.priority.includes("2")) {
+              } else if (task.type === "ISSUE") {
                 borderClass += "border-l-[#f59e0b]";
                 badgeClass += "text-amber-500";
               } else {
@@ -138,9 +142,9 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
                 badgeClass += "text-blue-500";
               }
 
-              const opacityClass = isDisabled && task.status === "todo" && isLocked 
+              const opacityClass = isDisabled && task.status !== "DONE" && isLocked 
                 ? "opacity-30 grayscale pointer-events-none" 
-                : (task.status === "done" ? "opacity-50" : "");
+                : (task.status === "DONE" ? "opacity-50" : "");
 
               return (
                 <div 
@@ -152,7 +156,7 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
                       onClick={() => handleToggleTask(task.id, task.status)}
                       disabled={isDisabled && !isThisTheBlocker && isLocked}
                       className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${
-                        task.status === "done" 
+                        task.status === "DONE" 
                           ? "bg-blue-600 border-blue-600 text-white" 
                           : "bg-zinc-950 border-zinc-700 text-transparent hover:border-blue-500"
                       }`}
@@ -160,7 +164,7 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
                       <CheckCircle className="w-4 h-4" />
                     </button>
                     <div className="flex-1">
-                      <h3 className={`font-bold text-lg ${task.status === "done" ? "text-zinc-500 line-through" : "text-white"}`}>
+                      <h3 className={`font-bold text-lg ${task.status === "DONE" ? "text-zinc-500 line-through" : "text-white"}`}>
                         {isThisTheBlocker && (
                           <span className="text-red-500 mr-2 text-sm uppercase tracking-widest border border-red-500 px-2 py-0.5 rounded">
                             Past Due
@@ -169,8 +173,12 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
                         {task.title}
                       </h3>
                       <div className="flex gap-4 mt-2 text-[10px] font-black uppercase tracking-widest">
-                        <span className={badgeClass}>{task.priority}</span>
-                        <span className="text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded">Daily</span>
+                        <span className={badgeClass}>
+                          {task.type === "ROCK" ? "🪨 Rock" : task.type === "ISSUE" ? "⚡ Issue" : "✅ To-Do"}
+                        </span>
+                        <span className="text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded">
+                          {task.persona === "JON_J_KORKOWSKI" ? "[JJK]" : "[TRD]"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -190,7 +198,7 @@ export function ExecutionBoard({ data }: ExecutionBoardProps) {
         {toasts.map((toast) => (
           <div 
             key={toast.id}
-            className="bg-blue-600 text-white px-5 py-4 rounded shadow-2xl font-bold flex items-center gap-3 text-sm animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto"
+            className="bg-blue-600 text-white px-5 py-4 rounded shadow-2xl font-bold flex items-center gap-3 text-sm pointer-events-auto fade-in"
           >
             <Satellite className="w-4 h-4" />
             <span>{toast.message}</span>

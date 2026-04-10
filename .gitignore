@@ -22,6 +22,10 @@ pnpm-debug.log*
 .env*
 !.env.example
 
+# database
+*.db
+*.db-journal
+
 # vercel
 .vercel
 

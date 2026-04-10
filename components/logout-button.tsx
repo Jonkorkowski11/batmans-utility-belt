@@ -1,27 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { logoutAction } from "@/app/actions";
+import { signOut } from "next-auth/react";
 
 export function LogoutButton() {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
   return (
     <button
       className="secondary-button"
-      disabled={isPending}
-      onClick={() => {
-        startTransition(async () => {
-          await logoutAction();
-          router.push("/login");
-          router.refresh();
-        });
-      }}
+      onClick={() => signOut({ callbackUrl: "/login" })}
       type="button"
     >
-      {isPending ? "Signing out..." : "Sign out"}
+      Sign out
     </button>
   );
 }

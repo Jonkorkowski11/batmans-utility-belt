@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
+import { getServerAuthSession } from "@/lib/auth";
 import { ManagerDashboard } from "@/components/manager-dashboard";
-import { requireSession } from "@/lib/auth";
-import { getTeamData, readStore } from "@/lib/store";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const session = await requireSession();
-  const store = await readStore();
+  const session = await getServerAuthSession();
 
-  if (session.systemRole !== "manager") {
-    redirect(`/team/${session.teamId}/member/${session.userId}`);
+  if (!session) {
+    redirect("/login");
   }
 
-  return <ManagerDashboard data={getTeamData(store)} />;
+  return <ManagerDashboard />;
 }
