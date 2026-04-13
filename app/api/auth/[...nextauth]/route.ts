@@ -16,6 +16,7 @@ const EMPLOYEE_EMAILS = [
 const ALLOWED_EMAILS = [...ADMIN_EMAILS, ...EMPLOYEE_EMAILS];
 
 export const authOptions: AuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   providers: [
