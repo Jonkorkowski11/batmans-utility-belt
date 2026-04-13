@@ -34,6 +34,8 @@ export default function ProcessLibraryPage() {
   const [newOwner, setNewOwner] = useState("");
   const [isCore, setIsCore] = useState(true);
 
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
+
   const loadData = async () => {
     try {
       const [pRes, uRes] = await Promise.all([
@@ -67,7 +69,7 @@ export default function ProcessLibraryPage() {
       body: JSON.stringify({
         title: newTitle,
         description: newDesc,
-        ownerId: newOwner || session?.user?.id,
+        ownerId: newOwner || (session?.user as any)?.id,
         isCore,
       }),
     });
@@ -84,6 +86,11 @@ export default function ProcessLibraryPage() {
       </div>
     );
   }
+
+  const itemVariants: any = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
@@ -127,8 +134,9 @@ export default function ProcessLibraryPage() {
               {processes.map((proc) => (
                 <motion.div 
                   key={proc.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="show"
                   className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">

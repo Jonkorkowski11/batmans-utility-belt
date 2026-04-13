@@ -72,8 +72,8 @@ export default function ScorecardPage() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
-    loadScorecard(session.user.id);
+    if (!session?.user) return;
+    loadScorecard((session.user as any).id);
     if (isAdmin) {
       fetch("/api/users")
         .then(res => res.json())
@@ -166,7 +166,7 @@ export default function ScorecardPage() {
     );
   }
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
   };

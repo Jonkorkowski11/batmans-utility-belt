@@ -185,11 +185,16 @@ export default function MeetingPage() {
   const topIssue = sortedIssues[0];
   const otherIssues = sortedIssues.slice(1);
 
+  const itemVariants: any = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
       {/* Top Header / Timer Bar */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <Link href="/" className="text-slate-400 hover:text-slate-900 transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </Link>

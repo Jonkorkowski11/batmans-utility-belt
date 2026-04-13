@@ -34,7 +34,7 @@ export default function AccountabilityPage() {
   const [selectedUser, setSelectedUser] = useState("");
   const [reportsTo, setReportsTo] = useState("");
 
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
 
   const loadData = async () => {
     try {
@@ -96,6 +96,11 @@ export default function AccountabilityPage() {
     );
   }
 
+  const itemVariants: any = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
@@ -130,8 +135,9 @@ export default function AccountabilityPage() {
           {seats.map((seat) => (
             <motion.div 
               key={seat.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
               className="bg-white rounded-3xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col"
             >
               <div className="p-6 bg-slate-50 border-b border-slate-100">

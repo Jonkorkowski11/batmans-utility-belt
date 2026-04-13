@@ -62,13 +62,13 @@ export default function VTOEditor() {
   const [editMode, setEditMode] = useState<"USER" | "GUIDANCE">("USER");
   const [generatingField, setGeneratingField] = useState<string | null>(null);
 
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
 
   useEffect(() => {
-    if (!session) return;
+    if (!session?.user) return;
     
     // Initial load: requester's VTO
-    loadVTO(session.user.id);
+    loadVTO((session.user as any).id);
     
     if (isAdmin) {
       fetch("/api/users")
@@ -240,12 +240,12 @@ export default function VTOEditor() {
     </motion.div>
   );
 
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
   };
